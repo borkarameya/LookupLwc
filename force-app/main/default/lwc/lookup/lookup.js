@@ -5,6 +5,8 @@ import {
 } from "lwc";
 import getRecords from "@salesforce/apex/LookupController.getRecords";
 
+const DELAY = 400;
+
 export default class Lookup extends LightningElement {
 
     // public properties
@@ -25,16 +27,17 @@ export default class Lookup extends LightningElement {
     @api value;
     @api variant;
 
-    // private properties
-    @track errorMessage;
+    // private complex properties
     @track recordArray;
     @track selectedRecord;
-    @track showDropdown;
-    @track showInvalid;
+
+    // private properties
+    errorMessage;
+    showDropdown;
+    showInvalid;
 
     //getters
     get isVariantLabelHidden() {
-
         return this.variant === "label-hidden";
     }
 
@@ -43,7 +46,6 @@ export default class Lookup extends LightningElement {
         let selectionClass = "slds-combobox_container";
 
         if (this.value) {
-
             selectionClass += " slds-has-selection";
         }
 
@@ -55,18 +57,14 @@ export default class Lookup extends LightningElement {
         let variantClass = "slds-form-element";
 
         if (this.variant === "label-inline") {
-
             variantClass += " slds-form-element_horizontal";
         } else if (this.variant === "label-stacked") {
-
             variantClass += " slds-form-element_stacked";
         } else if (this.variant === "standard") {
-
             // do nothing
         }
 
         if (this.showInvalid) {
-
             variantClass += " slds-has-error";
         }
 
@@ -77,67 +75,54 @@ export default class Lookup extends LightningElement {
     connectedCallback() {
 
         if (!this.disabled) {
-
             this.disabled = false;
         }
 
         if (!this.iconName) {
-
             this.iconName = "standard:user";
         }
 
         if (!this.label) {
-
             this.label = "User";
         }
 
         if (!this.objectApiName) {
-
             this.objectApiName = "User";
         }
 
         if (!this.placeholder) {
-
             this.placeholder = "Search...";
         }
 
         if (!this.primaryField) {
-
             this.primaryField = "Name";
         }
 
         if (!this.readOnly) {
-
             this.readOnly = false;
         }
 
         if (!this.recordLimit) {
-
             this.recordLimit = "10";
         }
 
         if (!this.required) {
-
             this.required = false;
         }
 
         if (!this.secondaryField) {
-
             this.secondaryField = "Email";
         }
 
         if (!this.ternaryField) {
-
             this.ternaryField = "";
         }
 
         if (!this.valid) {
-
             this.valid = true;
         }
 
         if (!this.variant) {
-
             this.variant = "standard";
         }
 
@@ -151,7 +136,6 @@ export default class Lookup extends LightningElement {
         }
 
         if (!this.showInvalid) {
-
             this.showInvalid = false;
         }
 
@@ -165,7 +149,6 @@ export default class Lookup extends LightningElement {
                 this.recordArray = result.data;
 
                 if (this.recordArray.length > 0) {
-
                     this.selectedRecord = this.recordArray[0];
                     this.value = this.selectedRecord.id;
                 }
@@ -180,7 +163,6 @@ export default class Lookup extends LightningElement {
     @api checkValidity() {
 
         if (this.required && !this.value) {
-
             this.valid = false;
             this.errorMessage = "This field is required";
         }
@@ -191,12 +173,11 @@ export default class Lookup extends LightningElement {
     @api reportValidity() {
 
         let isValid = this.checkValidity();
-        if (isValid) {
 
+        if (isValid) {
             this.showInvalid = false;
             this.errorMessage = null;
         } else {
-
             this.showInvalid = true;
         }
 
@@ -204,7 +185,6 @@ export default class Lookup extends LightningElement {
     }
 
     @api setCustomValidity(message) {
-
         this.errorMessage = message;
     }
 
@@ -234,25 +214,21 @@ export default class Lookup extends LightningElement {
         getRecords(params).then(result => {
 
             if (result.isSuccess) {
-
                 callbackOnSuccess(result);
                 this.reportValidity();
             } else {
 
                 this.valid = false;
-                
-                if (result.error) {
 
+                if (result.error) {
                     this.errorMessage = result.error.message;
                 } else if (result.message) {
-
                     this.errorMessage = result.message;
                 }
 
                 this.reportValidity();
             }
         }).catch((error) => {
-
             this.valid = false;
             this.errorMessage = error.body.message;
             this.reportValidity();
@@ -264,9 +240,7 @@ export default class Lookup extends LightningElement {
         let recordId = event.currentTarget.dataset.recordId;
 
         this.recordArray.forEach(record => {
-
             if (record.id === recordId) {
-
                 this.selectedRecord = record;
             }
         });
@@ -291,16 +265,13 @@ export default class Lookup extends LightningElement {
 
         this.searchText = event.target.value;
         this.searchText = this.searchText.trim();
-
         let params = this.getBasicParams();
 
         if (this.searchText) {
-
             params.searchText = this.searchText;
         }
 
         this.getRecordsFromServer(params, (result) => {
-
             this.recordArray = result.data;
             this.showDropdown = true;
         });
@@ -308,38 +279,38 @@ export default class Lookup extends LightningElement {
 
     handleOnInput(event) {
 
-        this.searchText = event.currentTarget.value;
-        this.searchText = this.searchText.trim();
+        window.clearTimeout(this.delayTimeout);
 
+        this.searchText = event.currentTarget.value;
+        // this.searchText = this.searchText.trim();
         let params = this.getBasicParams();
 
-        if (!this.searchText) {
+        this.delayTimeout = setTimeout(() => {
 
-            this.getRecordsFromServer(params, (result) => {
+            if (!this.searchText) {
 
-                this.recordArray = result.data;
-                this.showDropdown = true;
-            });
-        }
+                this.getRecordsFromServer(params, (result) => {
+                    this.recordArray = result.data;
+                    this.showDropdown = true;
+                });
+            }
 
-        if (this.searchText.length >= 3) {
+            if (this.searchText.length >= 3) {
 
-            params.searchText = this.searchText;
+                params.searchText = this.searchText;
 
-            this.getRecordsFromServer(params, (result) => {
-
-                this.recordArray = result.data;
-                this.showDropdown = true;
-            });
-        }
+                this.getRecordsFromServer(params, (result) => {
+                    this.recordArray = result.data;
+                    this.showDropdown = true;
+                });
+            }
+        }, DELAY);
     }
 
     handleOnKeyDown(event) {
 
         if (event.key === "Escape") {
-
             this.reportValidity();
-
             this.showDropdown = false;
             event.currentTarget.blur();
         }

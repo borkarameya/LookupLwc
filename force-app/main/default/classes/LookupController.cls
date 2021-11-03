@@ -24,7 +24,13 @@ public with sharing class LookupController {
                     + ' LIMIT ' + recordLimit;
 
                 System.debug(queryRecent);
-                Map<String, SObject> idToRecordMap = new Map<String, SObject>(Database.query(queryRecent));
+
+                Map<String, SObject> idToRecordMap = new Map<String, SObject>(
+                    Database.query(
+                        String.escapeSingleQuotes(queryRecent)
+                    )
+                );
+
                 recordIdList.addAll(idToRecordMap.keySet());
             }
 
@@ -35,7 +41,6 @@ public with sharing class LookupController {
             };
 
             if (String.isNotBlank(ternaryField)) {
-
                 fieldNameList.add(ternaryField);
             }
 
@@ -45,53 +50,46 @@ public with sharing class LookupController {
             List<String> whereClauseList = new List<String>();
 
             if (String.isNotBlank(recordId)) {
-
                 whereClauseList.add('Id = \'' + recordId + '\'');
-            } 
-            
-            if (!recordIdList.isEmpty()) {
+            }
 
+            if (!recordIdList.isEmpty()) {
                 whereClauseList.add('Id IN :recordIdList');
             }
 
             if (String.isNotBlank(searchText)) {
 
                 if (String.isNotBlank(primaryField)) {
-
                     whereClauseList.add(primaryField + ' LIKE \'%' + searchText + '%\'');
                 }
 
                 if (String.isNotBlank(secondaryField)) {
-
                     whereClauseList.add(secondaryField + ' LIKE \'%' + searchText + '%\'');
                 }
 
                 if (String.isNotBlank(ternaryField)) {
-
                     whereClauseList.add(ternaryField + ' LIKE \'%' + searchText + '%\'');
                 }
             }
 
             if (!whereClauseList.isEmpty()) {
-
                 query += ' WHERE ' + String.join(whereClauseList, ' OR ');
             }
 
             if (String.isNotBlank(primaryField)) {
-
                 query += ' ORDER BY ' + primaryField + ' ASC';
             }
 
             if (String.isNotBlank(recordLimit)) {
-
                 query += ' LIMIT ' + recordLimit;
             }
 
             System.debug(query);
 
-            List<SObject> recordList = Database.query(query);
+            List<SObject> recordList = Database.query(String.escapeSingleQuotes(query));
 
             List<RecordWrapper> recordWrapperList = new List<RecordWrapper>();
+
             for (Sobject record : recordList) {
 
                 RecordWrapper recordWrapper = new RecordWrapper();
@@ -101,7 +99,6 @@ public with sharing class LookupController {
                 recordWrapper.secondaryField = record.get(secondaryField);
 
                 if (String.isNotBlank(ternaryField)) {
-                
                     recordWrapper.ternaryField = record.get(ternaryField);
                 }
 
@@ -110,13 +107,11 @@ public with sharing class LookupController {
 
             return new ResponseWrapper(recordWrapperList, null, true, null);
         } catch (Exception e) {
-
             return new ResponseWrapper(null, getError(e), false, null);
         }
     }
 
     private static ErrorWrapper getError(Exception e) {
-
         return new ErrorWrapper(e.getLineNumber(), e.getMessage(), e.getStackTraceString());
     }
 
@@ -132,7 +127,6 @@ public with sharing class LookupController {
         public String stackTrace;
 
         public ErrorWrapper(Integer lineNumber, String message, String stackTrace) {
-
             this.lineNumber = lineNumber;
             this.message = message;
             this.stackTrace = stackTrace;
